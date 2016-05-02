@@ -5,8 +5,24 @@
  */
 package miniweka;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instances;
+import weka.clusterers.*;
+import weka.core.DistanceFunction;
+import weka.core.Instance;
+import weka.core.converters.ArffSaver;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Remove;
 
 /**
  *
@@ -14,33 +30,113 @@ import weka.core.Instances;
  */
 public class ClusterGen {
     
-    String ruta;
-
-    public ClusterGen() {
+    Instances data;
+    Instances instancesFilter;
+    String path;
+    
+    /**
+     * 
+     * @param path
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+    public ClusterGen(String path) throws FileNotFoundException, IOException {
+        BufferedReader reader = new BufferedReader(
+                              new FileReader(path));
+        this.path = path;
+        data = new Instances(reader);
+        reader.close();
+        // setting class attribute
+        data.setClassIndex(data.numAttributes() - 1);
     }
+    
+    /**
+     * 
+     * @param attribute 
+     */
+    public void imprimirAtributo(int attribute) {
+        for(Double d: data.attributeToDoubleArray(0)){
+            System.out.println(d);
+        }
+    }
+    
+    public void kmeans_test (DistanceFunction df, int numCluster, int seed, int maxIterations,
+            boolean replaceMissingValues, boolean preserveInstancesOrder, Vector<Integer> atributos) throws Exception{
         
-    public double obtenerCentroide( int numberOfClusters, Instances instances) throws Exception{
+        Instances dataCopy2 = new Instances(data);
+        
+        //Verificar atributos
+        for( Integer n: atributos ){
+            if(data.attribute(n-1).isDate())
+                throw new Exception("Cannot handle date attributes!");
+            else if(data.attribute(n-1).isString())
+                throw new Exception("Cannot handle string attributes!");
+        }
+        
+        Remove remove = new Remove();
+        remove.setAttributeIndices(getAttributesIndex(atributos));
+        remove.setInvertSelection(true);
+        remove.setInputFormat(data);
+        Instances dataCopy = Filter.useFilter(data, remove);
+        
         SimpleKMeans kmeans = new SimpleKMeans();
-
-        kmeans.setSeed(10);
-
-        // This is the important parameter to set
-        kmeans.setPreserveInstancesOrder(true);
-        kmeans.setNumClusters(numberOfClusters);
+                
+        kmeans.setNumClusters(numCluster);
+        kmeans.setMaxIterations(maxIterations);
+        kmeans.setSeed(seed);
+        kmeans.setDisplayStdDevs(false);
+        kmeans.setDistanceFunction(df);
+        kmeans.setDontReplaceMissingValues(replaceMissingValues);
+        kmeans.setPreserveInstancesOrder(preserveInstancesOrder);
+        kmeans.buildClusterer(dataCopy);
         
-        kmeans.buildClusterer(instances);
-
-        // This array returns the cluster number (starting with 0) for each instance
-        // The array has as many elements as the number of instances
-        int[] assignments = kmeans.getAssignments();
-
         int i=0;
+        int[] assignments = kmeans.getAssignments();
+        Instances centroids = kmeans.getClusterCentroids();
+        for( i=0; i<dataCopy.numInstances(); i++ ){
+            int nInstancia = assignments[i];
+            Instance instanciaCentroide = centroids.get(nInstancia);
+            for(int j=0; j<dataCopy.numAttributes(); j++){
+                Double valor = instanciaCentroide.value(j);
+                dataCopy.instance(i).setValue(j, valor);
+            }
+        }
+        
+        exportARFF(dataCopy);
+        
+        /*for( Instance instance: dataCopy ){
+            System.out.println(instance);
+        }
+                
         for(int clusterNum : assignments) {
-            System.out.printf("Instance %d -> Cluster %d", i, clusterNum);
+            System.out.printf("Instance %d -> Cluster %d \n", i, clusterNum);
             i++;
         }
         
-        return 0;
+         
+        for (i = 0; i < centroids.numInstances(); i++) { 
+          System.out.println( "Centroid " + i + ": " + centroids.instance(i)); 
+        }*/
     }
     
+    private String getAttributesIndex(Vector<Integer> atributos) {
+        String indices="";
+        int i;
+        for(i=0; i<atributos.size()-1; i++){
+            indices += atributos.get(i)+",";
+        }
+        indices += atributos.get(i);
+        return indices;
+    }
+
+    private void exportARFF(Instances instances) {
+        try {
+            ArffSaver saver = new ArffSaver();
+            saver.setInstances(instances);
+            saver.setFile(new File(path+"_generalizado.arff"));
+            saver.writeBatch();
+        } catch (IOException ex) {
+            Logger.getLogger(ClusterGen.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 }
