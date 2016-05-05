@@ -68,7 +68,7 @@ public class ClusterGen {
      * @param atributos
      * @throws Exception
      */
-    public void kmeans_test (DistanceFunction df, int numCluster, int seed, int maxIterations,
+    public void kmeans (DistanceFunction df, int numCluster, int seed, int maxIterations,
             boolean replaceMissingValues, boolean preserveInstancesOrder, Vector<Integer> atributos) throws Exception{
         
         Instances anonimized = new Instances(data);
@@ -109,10 +109,12 @@ public class ClusterGen {
                 dataCopy.instance(i).setValue(j, valor);
             }
         }
-        
         for( i=0; i<atributos.size(); i++ ){
-            for(Instance instance: anonimized){
-                instance.setValue(atributos.get(i), dataCopy.get(i).value(i));
+            for(int j = 0; j<anonimized.numInstances(); j++){
+                int atributo_copia = atributos.get(i);
+                int atributo = i;
+                double valor = dataCopy.instance(j).value(atributo);
+                anonimized.instance(j).setValue(atributo, valor);
             }
         }
         
