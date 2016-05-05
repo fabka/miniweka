@@ -10,14 +10,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instances;
-import weka.clusterers.*;
 import weka.core.DistanceFunction;
 import weka.core.Instance;
 import weka.core.converters.ArffSaver;
@@ -41,11 +38,11 @@ public class ClusterGen {
      * @throws IOException 
      */
     public ClusterGen(String path) throws FileNotFoundException, IOException {
-        BufferedReader reader = new BufferedReader(
-                              new FileReader(path));
-        this.path = path;
-        data = new Instances(reader);
-        reader.close();
+        try (BufferedReader reader = new BufferedReader(
+                new FileReader(path))) {
+            this.path = path;
+            data = new Instances(reader);
+        }
         // setting class attribute
         data.setClassIndex(data.numAttributes() - 1);
     }
@@ -60,10 +57,21 @@ public class ClusterGen {
         }
     }
     
+    /**
+     *
+     * @param df
+     * @param numCluster
+     * @param seed
+     * @param maxIterations
+     * @param replaceMissingValues
+     * @param preserveInstancesOrder
+     * @param atributos
+     * @throws Exception
+     */
     public void kmeans_test (DistanceFunction df, int numCluster, int seed, int maxIterations,
             boolean replaceMissingValues, boolean preserveInstancesOrder, Vector<Integer> atributos) throws Exception{
         
-        Instances dataCopy2 = new Instances(data);
+        Instances anonimized = new Instances(data);
         
         //Verificar atributos
         for( Integer n: atributos ){
@@ -90,7 +98,7 @@ public class ClusterGen {
         kmeans.setPreserveInstancesOrder(preserveInstancesOrder);
         kmeans.buildClusterer(dataCopy);
         
-        int i=0;
+        int i;
         int[] assignments = kmeans.getAssignments();
         Instances centroids = kmeans.getClusterCentroids();
         for( i=0; i<dataCopy.numInstances(); i++ ){
@@ -102,7 +110,13 @@ public class ClusterGen {
             }
         }
         
-        exportARFF(dataCopy);
+        for( i=0; i<atributos.size(); i++ ){
+            for(Instance instance: anonimized){
+                instance.setValue(atributos.get(i), dataCopy.get(i).value(i));
+            }
+        }
+        
+        exportARFF(anonimized);
         
         /*for( Instance instance: dataCopy ){
             System.out.println(instance);
@@ -113,7 +127,6 @@ public class ClusterGen {
             i++;
         }
         
-         
         for (i = 0; i < centroids.numInstances(); i++) { 
           System.out.println( "Centroid " + i + ": " + centroids.instance(i)); 
         }*/
@@ -133,7 +146,8 @@ public class ClusterGen {
         try {
             ArffSaver saver = new ArffSaver();
             saver.setInstances(instances);
-            saver.setFile(new File(path+"_generalizado.arff"));
+            String[] splitted = path.split(".arff");
+            saver.setFile(new File(splitted[0]+"_anonimizado.arff"));
             saver.writeBatch();
         } catch (IOException ex) {
             Logger.getLogger(ClusterGen.class.getName()).log(Level.SEVERE, null, ex);
