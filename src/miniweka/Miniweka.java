@@ -29,7 +29,7 @@ public class Miniweka {
             Vector<Integer> atributos = new Vector<Integer>(); 
             atributos.add(1);
             atributos.add(2);
-            cluster.kmeans_test(new weka.core.EuclideanDistance(), 3, 10, 500, false, true, atributos);
+            cluster.kmeans(new weka.core.EuclideanDistance(), 3, 10, 500, false, true, atributos);
             //cluster.kmeans(new weka.core.EuclideanDistance(), 3, 10, 500, false, false, Arrays.asList(0));
         } catch (IOException ex) {
             Logger.getLogger(Miniweka.class.getName()).log(Level.SEVERE, null, ex);
