@@ -32,6 +32,7 @@ public class ClusterGen {
     String path;
     
     /**
+     * Crea una serie de instancias weka para crear el cluster
      * 
      * @param path
      * @throws FileNotFoundException
@@ -48,6 +49,7 @@ public class ClusterGen {
     }
     
     /**
+     * Imprime todos los valores del atributo attribute
      * 
      * @param attribute 
      */
@@ -58,7 +60,9 @@ public class ClusterGen {
     }
     
     /**
-     *
+     * Genera el cluster, para ello necesita todas las variables que normalmente
+     * se envían al programa de weka.
+     * 
      * @param df
      * @param numCluster
      * @param seed
@@ -134,6 +138,13 @@ public class ClusterGen {
         }*/
     }
     
+    /**
+     * De una lista de atributos a eliminar obtiene los indices y los coloca en
+     * un formato entendible para la api de weka
+     * 
+     * @param atributos
+     * @return 
+     */
     private String getAttributesIndex(Vector<Integer> atributos) {
         String indices="";
         int i;
@@ -144,6 +155,11 @@ public class ClusterGen {
         return indices;
     }
 
+    /**
+     * Exporta una instancia a un formato arff para que no se pierda nungún dato.
+     * 
+     * @param instances 
+     */
     private void exportARFF(Instances instances) {
         try {
             ArffSaver saver = new ArffSaver();
