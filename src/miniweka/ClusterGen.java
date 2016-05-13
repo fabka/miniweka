@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,7 +30,6 @@ import weka.filters.unsupervised.attribute.Remove;
 public class ClusterGen {
     
     Instances data;
-    Instances instancesFilter;
     String path;
     
     /**
@@ -46,6 +47,10 @@ public class ClusterGen {
         }
         // setting class attribute
         data.setClassIndex(data.numAttributes() - 1);
+    }
+    
+    public ClusterGen( Instances instances ){
+        this.data = instances;
     }
     
     /**
@@ -113,6 +118,7 @@ public class ClusterGen {
                 dataCopy.instance(i).setValue(j, valor);
             }
         }
+        
         for( i=0; i<atributos.size(); i++ ){
             for(int j = 0; j<anonimized.numInstances(); j++){
                 int atributo_copia = atributos.get(i);
@@ -122,6 +128,8 @@ public class ClusterGen {
             }
         }
         
+        int k = 3;
+        boolean seCumple = verificarK(anonimized, k); 
         exportARFF(anonimized);
         
         /*for( Instance instance: dataCopy ){
@@ -154,6 +162,15 @@ public class ClusterGen {
         indices += atributos.get(i);
         return indices;
     }
+    
+    private Vector<Integer> getAttributesVector(String atributos) {
+        String[] splitted = atributos.split(",");
+        Vector<Integer> nAtributos =new Vector<>();
+        for(String s: splitted){
+            nAtributos.add(Integer.parseInt(s));
+        }
+        return nAtributos;
+    }
 
     /**
      * Exporta una instancia a un formato arff para que no se pierda nungún dato.
@@ -170,5 +187,55 @@ public class ClusterGen {
         } catch (IOException ex) {
             Logger.getLogger(ClusterGen.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    public void anonimizar(Instances instances, Vector<Integer> atributos, int k){
+        
+        final int maxIteraciones = 500;
+        int iteracion = 0;
+        do{
+            int atributo = mayorFrecuencia(atributos);
+
+            if( esCompleto(atributo) ){
+                iteracion++;//aplicar filtro 5 
+            }else{
+                iteracion++;//aplicar filtro 3
+            }
+        }while(true && iteracion < maxIteraciones); //Hacer mientras no se cumpla el k
+        borrarTuplas(instances, k);
+        exportARFF(instances);
+    }
+    
+    private Instances borrarTuplas(Instances instances, int k){
+        HashMap<Instance, Integer> mapa = obtenerMapa();
+        for( int i=0; i<instances.numInstances(); i++){
+            Instance instancia = instances.get(i);
+            int ocurrencias = mapa.get(instancia);
+            if( ocurrencias < k ){
+                instances.delete(i);
+            }
+        }
+        return instances;
+    }
+
+    private int mayorFrecuencia(Vector<Integer> atributos) {
+        int mayor = 0;
+        for( Integer i: atributos ){
+            if( i>mayor )
+                mayor = i;
+        }
+        return mayor;
+    }
+
+    private boolean esCompleto(int atributo) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private HashMap<Instance, Integer> obtenerMapa() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private boolean verificarK(Instances anonimized, int k) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
